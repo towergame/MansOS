@@ -20,22 +20,24 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-#
-# Defines options for make, used as make targets in addition
-# to the main target. Overrides the related options in the config file.
-#
-# Invoked from the main Makefile and the Makefile.top.
 #
 
-#--- Supported options
+#############################################
+# PC (native) platform
+#############################################
 
-OPT_VERBOSE = verbose
-OPT_QUIET = quiet
-OPT_OPTIMIZE = optimize
+#############################################
+# Define platform variables
 
-ALLOPTIONS = $(OPT_VERBOSE) $(OPT_QUIET) $(OPT_OPTIMIZE)
+ARCH = pc_arm
+# code needs this
+CPU_MHZ ?= 4
 
-#--- Supported platforms
+CFLAGS += -DPLATFORM_PC=1 -std=gnu89
+LDFLAGS += -std=gnu89
 
-PLATFORMS ?= pc pc_arm telosb sadmote sm3 z1 atmega launchpad em testbed testbed2 xm1000 fr tinymcu santa phaser
+#############################################
+# Define platform-specific sources
+# (excluding architecture-specific sources)
+
+PSOURCES += $(MOS)/platforms/pc/platform.c

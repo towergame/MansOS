@@ -21,42 +21,65 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dprint.h"
-#include <radio.h>
+#ifndef _SEM_HAL_H_
+#define _SEM_HAL_H_
 
-//
-// Hack: printInit() is both in this file and in dprint-serial.c
-// to avoid discarding these files at link stage.
-// This is just 6 byte overhead (code memory) by default,
-// and significant savings if radio is not used.
-//
-//void printInit(void)
-//{
-//    extern void printInitReal(void);
-//    printInitReal();
-//}
+#include <stdtypes.h>
 
-void radioPrint(const char* str)
-{
-#if 0
-   if (!localMac) getSimpleMac()->init(NULL, false, NULL, 0);
-   macSend(NULL, (uint8_t *) str, strlen(str) + 1);
-#else
-   // don't forget to call radioInit() somewhere!
-   radioSend((uint8_t *) str, strlen(str) + 1);
-   // mdelay(100); // wait a bit, to allow the radio to complete the sending
+#ifndef __APPLE__
+
+#include <semaphore.h>
+
+#else // __APPLE defined
+
+#include <mach/semaphore.h>
+typedef semaphore_t sem_t;
+
+#endif 
+
+
+/** @brief Succeeded in decrementing semaphore */
+#define SEM_SUCCESS 0
+/** @brief Failed in decrementing semaphore */
+#define SEM_FAIL 1
+
+
+/** @brief Initialize a semaphore.
+ * @param s A pointer to the semaphore to initialize.
+ * @param value Initial value to give the semaphore.
+ * Usually zero.
+ */
+void mos_sem_init(sem_t *s, int8_t value);
+
+/** @brief Destroy a semaphore.
+ */
+void mos_sem_destroy(sem_t *s);
+
+/** @brief Test the semaphore and decrement if possible, otherwise return.
+ * @param s Semaphore
+ * @return SEM_SUCCESS or SEM_FAIL
+ */
+uint8_t mos_sem_try_wait(sem_t *s);
+
+/** @brief Wait on a semaphore.
+ * Decrements the interal value of the semaphore if it
+ * is non-zero.  If the value is zero, blocks until it
+ * isn't zero.
+ * @param s A pointer to the semaphore to wait on.
+ */
+void mos_sem_wait(sem_t *s);
+
+/** @brief Post to the semaphore.
+ * Increments the internal value of the semaphore,
+ * @param s A pointer to the semaphore to post.
+ */
+void mos_sem_post(sem_t *s);
+
+/** @brief get value of semaphore. non blocking, does not decrement value
+ * @param s Semaphore
+ * @return semaphore value
+ */
+int8_t mos_sem_get_val(sem_t *s);
+
+
 #endif
-}
-
-#if USE_NETWORK
-void networkPrint(const char* str)
-{
-    static Socket_t socket;
-    if (socket.port == 0) {
-        socketOpen(&socket, NULL);
-        socketBind(&socket, DPRINT_PORT);
-        socketSetDstAddress(&socket, MOS_ADDR_ROOT);
-    }
-    socketSend(&socket, str, strlen(str) + 1);
-}
-#endif // USE_NETWORK

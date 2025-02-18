@@ -34,7 +34,7 @@ LDFLAGS += -lpthread
 
 include $(MAKEFILE_GCC)
 
-ifneq (RUNNING_ARCH,arm64)
+ifneq ($(shell uname -m),arm64)
 $(error This is not an ARM system, please consider building to pc target)
 endif
 

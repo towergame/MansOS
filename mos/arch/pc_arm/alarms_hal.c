@@ -21,42 +21,45 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dprint.h"
-#include <radio.h>
+#include <unistd.h>
+#include <timing.h>
+#include <kernel/alarms_internal.h>
+#include <sys/time.h>
 
-//
-// Hack: printInit() is both in this file and in dprint-serial.c
-// to avoid discarding these files at link stage.
-// This is just 6 byte overhead (code memory) by default,
-// and significant savings if radio is not used.
-//
-//void printInit(void)
-//{
-//    extern void printInitReal(void);
-//    printInitReal();
-//}
+//----------------------------------------------------------
+// platform-specific functions, required by alarm in HIL
+//----------------------------------------------------------
 
-void radioPrint(const char* str)
+static uint32_t getPcTime(void)
 {
-#if 0
-   if (!localMac) getSimpleMac()->init(NULL, false, NULL, 0);
-   macSend(NULL, (uint8_t *) str, strlen(str) + 1);
-#else
-   // don't forget to call radioInit() somewhere!
-   radioSend((uint8_t *) str, strlen(str) + 1);
-   // mdelay(100); // wait a bit, to allow the radio to complete the sending
-#endif
-}
-
-#if USE_NETWORK
-void networkPrint(const char* str)
-{
-    static Socket_t socket;
-    if (socket.port == 0) {
-        socketOpen(&socket, NULL);
-        socketBind(&socket, DPRINT_PORT);
-        socketSetDstAddress(&socket, MOS_ADDR_ROOT);
+    struct timeval tv;
+    if (gettimeofday(&tv, NULL)) {
+        return 0; // error occurred
+    } else {
+        // clear biggest bits of seconds to escape overflow - we are not
+        // actually interested in years, etc
+        return (tv.tv_sec & 0x000fffff) * 1000 + tv.tv_usec / 1000;
     }
-    socketSend(&socket, str, strlen(str) + 1);
 }
-#endif // USE_NETWORK
+
+//----------------------------------------------------------
+// alarm handling functions
+//----------------------------------------------------------
+
+void *alarmIntHandler(void *dummy) {
+    uint32_t lastTime = getPcTime();
+    while (1) {
+        usleep(10000);
+
+        uint32_t now = getPcTime();
+        jiffies += now - lastTime;
+        lastTime = now;
+
+// TODO
+//        mos_mutex_lock(&alarmMutex);
+        alarmsProcess();
+// TODO
+//        mos_mutex_unlock(&alarmMutex);
+    }
+    return 0;
+}

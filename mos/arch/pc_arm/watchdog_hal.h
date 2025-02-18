@@ -21,42 +21,13 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dprint.h"
-#include <radio.h>
+#ifndef MANSOS_WATCHDOG_HAL
+#define MANSOS_WATCHDOG_HAL
 
-//
-// Hack: printInit() is both in this file and in dprint-serial.c
-// to avoid discarding these files at link stage.
-// This is just 6 byte overhead (code memory) by default,
-// and significant savings if radio is not used.
-//
-//void printInit(void)
-//{
-//    extern void printInitReal(void);
-//    printInitReal();
-//}
+#define watchdogStop()
+#define watchdogStart()
 
-void radioPrint(const char* str)
-{
-#if 0
-   if (!localMac) getSimpleMac()->init(NULL, false, NULL, 0);
-   macSend(NULL, (uint8_t *) str, strlen(str) + 1);
-#else
-   // don't forget to call radioInit() somewhere!
-   radioSend((uint8_t *) str, strlen(str) + 1);
-   // mdelay(100); // wait a bit, to allow the radio to complete the sending
+void watchdogReboot(void);
+void watchdogRebootSimple(void);
+
 #endif
-}
-
-#if USE_NETWORK
-void networkPrint(const char* str)
-{
-    static Socket_t socket;
-    if (socket.port == 0) {
-        socketOpen(&socket, NULL);
-        socketBind(&socket, DPRINT_PORT);
-        socketSetDstAddress(&socket, MOS_ADDR_ROOT);
-    }
-    socketSend(&socket, str, strlen(str) + 1);
-}
-#endif // USE_NETWORK

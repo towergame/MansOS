@@ -21,42 +21,55 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dprint.h"
-#include <radio.h>
+#ifndef _PLATFORM_PC_H_
+#define _PLATFORM_PC_H_
+
+#include <defines.h>
+#include "sem_hal.h"
+#include "leds_hal.h"
+#include "adc_hal.h"
+#include "timers_hal.h"
+#include "ints_hal.h"
+
+#include <arch/null_spi.h>
+
+#include <digital.h>
 
 //
-// Hack: printInit() is both in this file and in dprint-serial.c
-// to avoid discarding these files at link stage.
-// This is just 6 byte overhead (code memory) by default,
-// and significant savings if radio is not used.
+// As stdio.h cannot be included: define some of
+// frequently used function prototypes.
 //
-//void printInit(void)
-//{
-//    extern void printInitReal(void);
-//    printInitReal();
-//}
-
-void radioPrint(const char* str)
-{
-#if 0
-   if (!localMac) getSimpleMac()->init(NULL, false, NULL, 0);
-   macSend(NULL, (uint8_t *) str, strlen(str) + 1);
-#else
-   // don't forget to call radioInit() somewhere!
-   radioSend((uint8_t *) str, strlen(str) + 1);
-   // mdelay(100); // wait a bit, to allow the radio to complete the sending
+#if MANSOS_STDIO
+extern int sprintf(const char *str, const char *format, ...);
+extern int snprintf(const char *str, size_t size, const char *format, ...);
 #endif
+extern void perror(const char *s);
+
+
+void initPlatform(void);
+
+#ifndef PRINT_BUFFER_SIZE
+#define PRINT_BUFFER_SIZE 127
+#endif
+
+// LEDs: all present! Defined in pc/ledslist.h
+
+// number of USARTs
+#define SERIAL_COUNT 1
+// use the only "USART" for PRINTF
+#define PRINTF_SERIAL_ID 0
+
+// SD card ID
+#define SDCARD_SPI_ID 0
+
+#define RADIO_CHIP  RADIO_CHIP_SOFTWARE // simulation
+
+
+// sleeping
+#include <unistd.h>
+
+extern inline void doMsleep(uint16_t milliseconds) {
+    usleep(milliseconds * 1000);
 }
 
-#if USE_NETWORK
-void networkPrint(const char* str)
-{
-    static Socket_t socket;
-    if (socket.port == 0) {
-        socketOpen(&socket, NULL);
-        socketBind(&socket, DPRINT_PORT);
-        socketSetDstAddress(&socket, MOS_ADDR_ROOT);
-    }
-    socketSend(&socket, str, strlen(str) + 1);
-}
-#endif // USE_NETWORK
+#endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2012 the MansOS team. All rights reserved.
+ * Copyright (c) 2008-2011 the MansOS team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -20,43 +20,62 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+/*
+ * eeprom_hal.c -- non-volatile configuration memory emulation
+ */
 
-#include "dprint.h"
-#include <radio.h>
+#define _XOPEN_SOURCE 600 /* For ftruncate() */
 
-//
-// Hack: printInit() is both in this file and in dprint-serial.c
-// to avoid discarding these files at link stage.
-// This is just 6 byte overhead (code memory) by default,
-// and significant savings if radio is not used.
-//
-//void printInit(void)
-//{
-//    extern void printInitReal(void);
-//    printInitReal();
-//}
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
-void radioPrint(const char* str)
+#include <eeprom.h>
+#include <assert.h>
+#include <print.h>
+
+#define FILENAME "eeprom"
+
+void eepromInit(void)
 {
-#if 0
-   if (!localMac) getSimpleMac()->init(NULL, false, NULL, 0);
-   macSend(NULL, (uint8_t *) str, strlen(str) + 1);
-#else
-   // don't forget to call radioInit() somewhere!
-   radioSend((uint8_t *) str, strlen(str) + 1);
-   // mdelay(100); // wait a bit, to allow the radio to complete the sending
-#endif
-}
+    PRINTF("Opening EEPROM image `" FILENAME "'...\n");
 
-#if USE_NETWORK
-void networkPrint(const char* str)
-{
-    static Socket_t socket;
-    if (socket.port == 0) {
-        socketOpen(&socket, NULL);
-        socketBind(&socket, DPRINT_PORT);
-        socketSetDstAddress(&socket, MOS_ADDR_ROOT);
+    int data = open(FILENAME, O_RDONLY);
+    if (data < 0) {
+        data = creat(FILENAME, 0644);
+        ASSERT(data > 0);
+
+        int ret = ftruncate(data, EEPROM_SIZE);
+        ASSERT(ret == 0);
     }
-    socketSend(&socket, str, strlen(str) + 1);
+    close(data);
 }
-#endif // USE_NETWORK
+
+void eepromRead(uint16_t addr, void *buf, size_t len)
+{
+    int data = open(FILENAME, O_RDONLY);
+    if (data < 0) return;
+
+    ASSERT(addr + len <= EEPROM_SIZE);
+
+    int ret = lseek(data, addr, SEEK_SET);
+    size_t ret2 = read(data, buf, len);
+    ASSERT(ret == 0 && ret2 == len);
+    close(data);
+}
+
+void eepromWrite(uint16_t addr, const void *buf, size_t len)
+{
+    ASSERT(addr + len <= EEPROM_SIZE);
+
+    int data = open(FILENAME, O_WRONLY);
+    if (data < 0) return;
+
+    lseek(data, addr, SEEK_SET);
+    int r = write(data, buf, len);
+    (void) r;
+    close(data);
+}

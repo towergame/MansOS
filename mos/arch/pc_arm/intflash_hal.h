@@ -21,42 +21,30 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dprint.h"
-#include <radio.h>
+#ifndef INT_FLASH_HAL_H
+#define INT_FLASH_HAL_H
 
-//
-// Hack: printInit() is both in this file and in dprint-serial.c
-// to avoid discarding these files at link stage.
-// This is just 6 byte overhead (code memory) by default,
-// and significant savings if radio is not used.
-//
-//void printInit(void)
-//{
-//    extern void printInitReal(void);
-//    printInitReal();
-//}
+// TODO
 
-void radioPrint(const char* str)
-{
-#if 0
-   if (!localMac) getSimpleMac()->init(NULL, false, NULL, 0);
-   macSend(NULL, (uint8_t *) str, strlen(str) + 1);
-#else
-   // don't forget to call radioInit() somewhere!
-   radioSend((uint8_t *) str, strlen(str) + 1);
-   // mdelay(100); // wait a bit, to allow the radio to complete the sending
+#define intFlashErase(address, length)
+#define intFlashWrite(address, buffer, length)
+#define intFlashWriteBlock(address, buffer, length)
+#define intFlashRead(address, buffer, length)
+
+// Total size of flash memory
+#define INT_FLASH_SIZE            0
+
+// Size of minimal flash unit that can be erased at once
+#define INT_FLASH_SEGMENT_SIZE    0
+
+// Size of maximal flash unit that can be written at once
+#define INT_FLASH_BLOCK_SIZE      0
+
+// Start address of code memory
+#define INT_FLASH_START           0x0
+
+// Start address of "information memory"
+#define INT_FLASH_INFOMEM_START   0x0
+
+
 #endif
-}
-
-#if USE_NETWORK
-void networkPrint(const char* str)
-{
-    static Socket_t socket;
-    if (socket.port == 0) {
-        socketOpen(&socket, NULL);
-        socketBind(&socket, DPRINT_PORT);
-        socketSetDstAddress(&socket, MOS_ADDR_ROOT);
-    }
-    socketSend(&socket, str, strlen(str) + 1);
-}
-#endif // USE_NETWORK

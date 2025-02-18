@@ -21,42 +21,30 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dprint.h"
-#include <radio.h>
-
 //
-// Hack: printInit() is both in this file and in dprint-serial.c
-// to avoid discarding these files at link stage.
-// This is just 6 byte overhead (code memory) by default,
-// and significant savings if radio is not used.
-//
-//void printInit(void)
-//{
-//    extern void printInitReal(void);
-//    printInitReal();
-//}
+// CPU dependent datatypes, constants and defines.
 
-void radioPrint(const char* str)
-{
-#if 0
-   if (!localMac) getSimpleMac()->init(NULL, false, NULL, 0);
-   macSend(NULL, (uint8_t *) str, strlen(str) + 1);
-#else
-   // don't forget to call radioInit() somewhere!
-   radioSend((uint8_t *) str, strlen(str) + 1);
-   // mdelay(100); // wait a bit, to allow the radio to complete the sending
+#ifndef _ARCH_DATATYPES_H_
+#define _ARCH_DATATYPES_H_
+
+#include <sys/types.h> /* For ssize_t */
+
+#ifndef uint_t
+typedef unsigned int uint_t;
 #endif
-}
 
-#if USE_NETWORK
-void networkPrint(const char* str)
-{
-    static Socket_t socket;
-    if (socket.port == 0) {
-        socketOpen(&socket, NULL);
-        socketBind(&socket, DPRINT_PORT);
-        socketSetDstAddress(&socket, MOS_ADDR_ROOT);
-    }
-    socketSend(&socket, str, strlen(str) + 1);
-}
-#endif // USE_NETWORK
+#ifndef int_t
+typedef int int_t;
+#endif
+
+// storage for status register (simulated)
+typedef uint16_t Handle_t __attribute__((unused));
+
+// physical address (simulated) type
+// typedef uint32_t MemoryAddress_t;
+typedef void * MemoryAddress_t;
+
+// Unsigned type large enough for holding flash address range
+typedef uint16_t FlashAddress_t;
+
+#endif

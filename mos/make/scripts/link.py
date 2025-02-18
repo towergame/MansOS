@@ -85,15 +85,15 @@ def get_symbols(file):
     for lineb in lines:
         line = lineb.decode("utf-8")
         # exported functions
-        m = re.search('\sg\s*F\s.*\s([a-zA-Z0-9_]+)\s*$', line)
+        m = re.search(r'\sg\s*F\s.*\s([a-zA-Z0-9_]+)\s*$', line)
         if not m is None:
             exported.append(m.group(1))
         # exported variables
-        m = re.search('\sO\s.*\s([a-zA-Z0-9_]+)\s*$', line)
+        m = re.search(r'\sO\s.*\s([a-zA-Z0-9_]+)\s*$', line)
         if not m is None:
             exported.append(m.group(1))
         # unresolved symbols
-        m = re.search('^[0-9a-fA-F]*\s*\*UND\*\s.*\s([a-zA-Z0-9_]+)\s*$', line)
+        m = re.search(r'^[0-9a-fA-F]*\s*\*UND\*\s.*\s([a-zA-Z0-9_]+)\s*$', line)
         if not m is None:
             s = m.group(1)
             if s[0:2] != '__':
